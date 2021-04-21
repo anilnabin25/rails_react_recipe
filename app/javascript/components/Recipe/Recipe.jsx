@@ -7,6 +7,13 @@ class Recipe extends React.Component {
     this.state = { recipe: { ingredients: "" } };
 
     this.addHtmlEntities = this.addHtmlEntities.bind(this);
+    this.deleteRecipe = this.deleteRecipe.bind(this);
+  }
+
+  addHtmlEntities(str) {
+    return String(str)
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
   }
 
   componentDidMount() {
@@ -15,9 +22,7 @@ class Recipe extends React.Component {
         params: { id }
       }
     } = this.props;
-
-    const url = `/api/v1/show/${id}`;
-
+    const url = `/api/v1/recipes/${id}`;
     fetch(url)
       .then(response => {
         if (response.ok) {
@@ -29,16 +34,34 @@ class Recipe extends React.Component {
       .catch(() => this.props.history.push("/recipes"));
   }
 
-  addHtmlEntities(str) {
-    return String(str)
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">");
+  deleteRecipe() {
+    const {
+      match: {
+        params: { id }
+      }
+    } = this.props;
+    const url = `/api/v1/recipes/${id}`;
+    const token = document.querySelector('meta[name="csrf-token"]').content;
+    fetch(url, {
+      method: "DELETE",
+      headers: {
+        "X-CSRF-Token": token,
+        "Content-Type": "application/json"
+      }
+    })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error("Network response was not ok.");
+      })
+      .then(() => this.props.history.push("/recipes"))
+      .catch(error => console.log(error.message));
   }
 
   render() {
     const { recipe } = this.state;
     let ingredientList = "No ingredients available";
-
     if (recipe.ingredients.length > 0) {
       ingredientList = recipe.ingredients
         .split(",")
@@ -48,10 +71,11 @@ class Recipe extends React.Component {
           </li>
         ));
     }
+
     const recipeInstruction = this.addHtmlEntities(recipe.instruction);
 
     return (
-      <div className="">
+      <div className=""> 
         <div className="hero position-relative d-flex align-items-center justify-content-center">
           <img
             src={recipe.image}
@@ -62,8 +86,7 @@ class Recipe extends React.Component {
           <h1 className="display-4 position-relative text-white">
             {recipe.name}
           </h1>
-        </div>
-        <div className="container py-5">
+        </div>        <div className="container py-5">
           <div className="row">
             <div className="col-sm-12 col-lg-3">
               <ul className="list-group">
@@ -80,7 +103,7 @@ class Recipe extends React.Component {
               />
             </div>
             <div className="col-sm-12 col-lg-2">
-              <button type="button" className="btn btn-danger">
+              <button type="button" className="btn btn-danger" onClick={this.deleteRecipe}>
                 Delete Recipe
               </button>
             </div>
@@ -92,7 +115,6 @@ class Recipe extends React.Component {
       </div>
     );
   }
-
 }
 
 export default Recipe;
